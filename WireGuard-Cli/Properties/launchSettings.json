@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "WireGuard-Cli": {
+      "commandName": "Project",
+      "commandLineArgs": "-c d:\\test.conf -n WGTesting -t client"
+    }
+  }
+}

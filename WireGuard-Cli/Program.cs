@@ -176,7 +176,7 @@ namespace WireGuardCli // Note: actual namespace depends on the project name.
             //MIB_UNICASTIPADDRESS_ROW unicastIpAddressRow;
             InitializeUnicastIpAddressEntry(out MIB_UNICASTIPADDRESS_ROW unicastIpAddressRow);
             unicastIpAddressRow.InterfaceLuid = _adapterLuid;
-            unicastIpAddressRow.Address.Ipv4.sin_addr = new Ws2_32.IN_ADDR(WgConfig.InterfaceAddress.GetAddressBytes());
+            unicastIpAddressRow.Address.Ipv4.sin_addr = new Ws2_32.IN_ADDR(WgConfig.InterfaceNetwork.Network.GetAddressBytes());
             unicastIpAddressRow.Address.Ipv4.sin_family = Ws2_32.ADDRESS_FAMILY.AF_INET;
             unicastIpAddressRow.OnLinkPrefixLength = WgConfig.InterfaceNetwork.Cidr;
             unicastIpAddressRow.DadState = NL_DAD_STATE.IpDadStatePreferred;

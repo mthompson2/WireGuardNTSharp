@@ -11,7 +11,8 @@ namespace WireGuardNT_PInvoke.WireGuard
     public class WgConfig
     {
         public loctlWireGuardConfig LoctlWireGuardConfig;
-        public IPAddress InterfaceAddress { get; set; }
+    
+//        public IPAddress InterfaceAddress { get; set; }  // Never gets set but was referenced.  Assume InterfaceNetwork was meant
         public IPNetwork InterfaceNetwork { get; set; }
         public IPAddress[] DnsAddresses { get; set; }
 

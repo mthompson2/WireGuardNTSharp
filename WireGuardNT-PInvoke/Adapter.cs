@@ -327,6 +327,13 @@ namespace WireGuardNT_PInvoke
                 return false;
             }
 
+            // CHeck if a Network has been specified
+            if (ipString.Contains("/"))
+            {
+                string[] parts = ipString.Split('/');
+                ipString = parts[0];
+            }
+
             string[] splitValues = ipString.Split('.');
             if (splitValues.Length != 4)
             {
@@ -338,7 +345,7 @@ namespace WireGuardNT_PInvoke
             return splitValues.All(r => byte.TryParse(r, out tempForParsing));
 
         }
-
+   
 
         public void SetConfiguration(WgConfig wgConfig)
         {
