@@ -140,34 +140,43 @@ namespace WireGuardCli // Note: actual namespace depends on the project name.
 
             for (var i = 0; i < WgConfig.LoctlWireGuardConfig.WgPeerConfigs.Length; i++)
             {
+
+
                 var peerConfig = WgConfig.LoctlWireGuardConfig.WgPeerConfigs[i];
-                MIB_IPFORWARD_ROW2 row;
-                InitializeIpForwardEntry(out row);
-                row.InterfaceLuid = _adapterLuid;
 
-                row.Metric = 1;
-
-                var maskedIp = IPNetwork.Parse("" + peerConfig.allowdIp.V4.Addr, peerConfig.allowdIp.Cidr);
-
-                row.DestinationPrefix.Prefix.Ipv4.sin_addr = new Ws2_32.IN_ADDR(maskedIp.Network.GetAddressBytes());
-                //row.DestinationPrefix.Prefix.Ipv4.sin_addr = Ws2_32.IN_ADDR.INADDR_ANY;
-                row.DestinationPrefix.Prefix.si_family = Ws2_32.ADDRESS_FAMILY.AF_INET;
-                row.DestinationPrefix.PrefixLength = maskedIp.Cidr;
-
-                row.Protocol = MIB_IPFORWARD_PROTO.MIB_IPPROTO_LOCAL;
-                row.NextHop.Ipv4.sin_addr = Ws2_32.IN_ADDR.INADDR_ANY;
-                row.NextHop.si_family = Ws2_32.ADDRESS_FAMILY.AF_INET;
-
-                lastError = CreateIpForwardEntry2(ref row);
-                if (lastError.Failed)
+                for (int j=0;j<peerConfig.AllowedIPs.Length;j++)
                 {
-                    //Failed to set default route
-                    Console.WriteLine("CreateIpForwardEntry2 [" + i + "] " + lastError.ToString());
+                    IoctlAllowedIP ip = peerConfig.AllowedIPs[j];
+                    MIB_IPFORWARD_ROW2 row;
+                    InitializeIpForwardEntry(out row);
+                    row.InterfaceLuid = _adapterLuid;
+
+                    row.Metric = 1;
+
+                    var maskedIp = IPNetwork.Parse("" + ip.V4.Addr, ip.Cidr);
+
+                    row.DestinationPrefix.Prefix.Ipv4.sin_addr = new Ws2_32.IN_ADDR(maskedIp.Network.GetAddressBytes());
+                    //row.DestinationPrefix.Prefix.Ipv4.sin_addr = Ws2_32.IN_ADDR.INADDR_ANY;
+                    row.DestinationPrefix.Prefix.si_family = Ws2_32.ADDRESS_FAMILY.AF_INET;
+                    row.DestinationPrefix.PrefixLength = maskedIp.Cidr;
+
+                    row.Protocol = MIB_IPFORWARD_PROTO.MIB_IPPROTO_LOCAL;
+                    row.NextHop.Ipv4.sin_addr = Ws2_32.IN_ADDR.INADDR_ANY;
+                    row.NextHop.si_family = Ws2_32.ADDRESS_FAMILY.AF_INET;
+
+                    lastError = CreateIpForwardEntry2(ref row);
+                    if (lastError.Failed)
+                    {
+                        //Failed to set default route
+                        Console.WriteLine("CreateIpForwardEntry2 [" + i + "] " + lastError.ToString());
+                    }
+                    else
+                    {
+                        Console.WriteLine("Set default route [" + i + "] " + lastError.ToString());
+                    }
+
                 }
-                else
-                {
-                    Console.WriteLine("Set default route [" + i + "] " + lastError.ToString());
-                }
+
 
             }
 

@@ -135,7 +135,7 @@ namespace WireGuardNT_PInvoke.WireGuard
     public unsafe struct loctlWgPeerConfig
     {
         public IoctlPeer client;
-        public IoctlAllowedIP allowdIp;
+        public IoctlAllowedIP[] AllowedIPs;
     }
 
     public enum WireGuardAdapterState : UInt32

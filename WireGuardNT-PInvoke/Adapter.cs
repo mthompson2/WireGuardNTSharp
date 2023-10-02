@@ -233,24 +233,34 @@ namespace WireGuardNT_PInvoke
                             continue;
                         case "allowedips":
 
-                            var allowedIpTopStr = value.Split(',').First().Trim();
-                            var allowTopIp = IPNetwork.Parse(allowedIpTopStr);
+                            string[] allowedIPs = value.Split(',');
 
-                            if (allowTopIp.AddressFamily == AddressFamily.InterNetworkV6)
+                            System.Collections.Generic.List<IoctlAllowedIP> items = new System.Collections.Generic.List<IoctlAllowedIP>();
+                            foreach(string allowedIp in allowedIPs)
                             {
-                                wgConfig.LoctlWireGuardConfig.WgPeerConfigs[peerCount - 1].allowdIp.AddressFamily = Win32.ADDRESS_FAMILY.AF_INET6;
-                                wgConfig.LoctlWireGuardConfig.WgPeerConfigs[peerCount - 1].allowdIp.Cidr = allowTopIp.Cidr;
+                                string trimmedIp = allowedIp.Trim();
 
-                                wgConfig.LoctlWireGuardConfig.WgPeerConfigs[peerCount - 1].allowdIp.V6.Addr = allowTopIp.Network;
-                            }
-                            else if (allowTopIp.AddressFamily == AddressFamily.InterNetwork)
-                            {
-                                wgConfig.LoctlWireGuardConfig.WgPeerConfigs[peerCount - 1].allowdIp.AddressFamily = Win32.ADDRESS_FAMILY.AF_INET;
-                                wgConfig.LoctlWireGuardConfig.WgPeerConfigs[peerCount - 1].allowdIp.Cidr = allowTopIp.Cidr;
-                                wgConfig.LoctlWireGuardConfig.WgPeerConfigs[peerCount - 1].allowdIp.V4.Addr = allowTopIp.Network;
+                                var allowTopIp = IPNetwork.Parse(trimmedIp);
+                                IoctlAllowedIP ipStruct = new IoctlAllowedIP();
+                                if (allowTopIp.AddressFamily == AddressFamily.InterNetworkV6)
+                                {
+                                    ipStruct.AddressFamily = Win32.ADDRESS_FAMILY.AF_INET6;
+                                    ipStruct.Cidr = allowTopIp.Cidr;
+
+                                    ipStruct.V6.Addr = allowTopIp.Network;
+                                }
+                                else if (allowTopIp.AddressFamily == AddressFamily.InterNetwork)
+                                {
+                                    ipStruct.AddressFamily = Win32.ADDRESS_FAMILY.AF_INET;
+                                    ipStruct.Cidr = allowTopIp.Cidr;
+                                    ipStruct.V4.Addr = allowTopIp.Network;
+                                }
+                                items.Add(ipStruct);
                             }
 
-                            wgConfig.LoctlWireGuardConfig.WgPeerConfigs[peerCount - 1].client.AllowedIPsCount = 1;
+                            wgConfig.LoctlWireGuardConfig.WgPeerConfigs[peerCount - 1].AllowedIPs = items.ToArray();
+
+                            wgConfig.LoctlWireGuardConfig.WgPeerConfigs[peerCount - 1].client.AllowedIPsCount = (uint)items.Count();
 
                             continue;
                         case "persistentkeepalive":
@@ -361,7 +371,10 @@ namespace WireGuardNT_PInvoke
             for (var i = 0; i < _loctlWireGuardConfig.WgPeerConfigs.Length; i++)
             {
                 var wgPeerConfig = _loctlWireGuardConfig.WgPeerConfigs[i];
-                var configSize = Marshal.SizeOf(wgPeerConfig);
+                var configSize = Marshal.SizeOf(wgPeerConfig.client);
+                var allowedIPSize = Marshal.SizeOf(wgPeerConfig.AllowedIPs[0]);
+                totalSize += (int)(allowedIPSize * wgPeerConfig.client.AllowedIPsCount); // Increase the size for the number of allowedIPs specified
+
                 totalSize += configSize;
             }
 
@@ -377,12 +390,26 @@ namespace WireGuardNT_PInvoke
             for (var i = 0; i < _loctlWireGuardConfig.WgPeerConfigs.Length; i++)
             {
                 var wgPeerConfig = _loctlWireGuardConfig.WgPeerConfigs[i];
-                var configSize = Marshal.SizeOf(wgPeerConfig);
+                var configSize = Marshal.SizeOf(wgPeerConfig.client);
+                var allowedIPSize = Marshal.SizeOf(wgPeerConfig.AllowedIPs[0]);
                 IntPtr wgPeerConfigPtr = Marshal.AllocHGlobal(configSize);
-                Marshal.StructureToPtr(wgPeerConfig, wgPeerConfigPtr, true);
+                Marshal.StructureToPtr(wgPeerConfig.client, wgPeerConfigPtr, true);
                 Marshal.Copy(wgPeerConfigPtr, wgConfig.ConfigBuffer.Buffer, byteCursor, configSize);
                 Marshal.FreeHGlobal(wgPeerConfigPtr);
                 byteCursor += configSize;
+
+
+                foreach (IoctlAllowedIP ip in wgPeerConfig.AllowedIPs)
+                {
+                    IntPtr allowedIPPtr = Marshal.AllocHGlobal(allowedIPSize);
+   
+                    Marshal.StructureToPtr(ip, allowedIPPtr, true);
+                    Marshal.Copy(allowedIPPtr, wgConfig.ConfigBuffer.Buffer, byteCursor, allowedIPSize);
+                    Marshal.FreeHGlobal(allowedIPPtr);
+                    byteCursor += allowedIPSize;
+
+                }
+
 
             }
             //Marshal.Copy((IntPtr)_loctlWireGuardConfig.Interfaze, 0, wgConfig.ConfigBuffer.BufferPointer,interfazeSize);
